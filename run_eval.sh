@@ -1,0 +1,22 @@
+python run_summarization.py \
+--mode=eval \
+--data_path=./data/output_demo.bin \
+--vocab_path=./data/vocab_demo.txt \
+--log_root=logroot \
+--exp_name=test-demo-v2 \
+--max_dec_steps=1 \
+--max_enc_steps=2 \
+--hidden_dim=24 \
+--emb_dim=10 \
+--num_sections=1 \
+--max_section_len=10 \
+--batch_size=2 \
+--vocab_size=50 \
+--use_do=True \
+--optimizer=adagrad \
+--do_prob=0.25 \
+--hier=True \
+--split_intro=False \
+--fixed_attn=True \
+--legacy_encoder=False \
+--coverage=False

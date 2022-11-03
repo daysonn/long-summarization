@@ -21,6 +21,7 @@ import sys
 import time
 import os
 import tensorflow as tf
+import tensorflow.compat.v1 as tfv1
 import numpy as np
 from collections import namedtuple
 from data import Vocab
@@ -30,6 +31,7 @@ from decode import BeamSearchDecoder
 from tensorflow.python import debug as tf_debug
 import util
 
+tfv1.disable_v2_behavior()
 FLAGS = tf.app.flags.FLAGS
 
 # Where to find data
@@ -115,7 +117,7 @@ tf.app.flags.DEFINE_string('optimizer', 'adagrad', 'optimizer can be `adagrad`, 
 tf.app.flags.DEFINE_boolean('multi_layer_encoder', False, 'whether encoder is a multilayer LSTM')
 tf.app.flags.DEFINE_integer('enc_layers', 1, 'number of encoder layers')
 
-tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
+tf.app.flags.DEFINE_boolean('debug', True, 'debug mode')
 tf.app.flags.DEFINE_string('ui_type', 'curses', "Command-line user interface type (curses | readline)")
 tf.app.flags.DEFINE_string('dump_root', "/home/arman/ext1/tmp/tfdbg/", "Location for dumping tfdbg logs")
 
@@ -169,13 +171,13 @@ def calc_running_avg_loss(loss, running_avg_loss, summary_writer, step, decay=0.
     tag_name = 'running_avg_loss/decay=%f' % (decay)
     loss_sum.value.add(tag=tag_name, simple_value=running_avg_loss)
     summary_writer.add_summary(loss_sum, step)
-    tf.logging.info('running_avg_loss: %f', running_avg_loss)
+    tfv1.logging.info('running_avg_loss: %f', running_avg_loss)
     return running_avg_loss
 
 
 def restore_best_model():
   """Load bestmodel file from eval directory, add variables for adagrad, and save to train directory"""
-  tf.logging.info("Restoring bestmodel for training...")
+  tfv1.logging.info("Restoring bestmodel for training...")
 
   # Initialize all vars in the model
   sess = tf.Session(config=util.get_config())
@@ -183,7 +185,7 @@ def restore_best_model():
   sess.run(tf.initialize_all_variables())
 
   # Restore the best model from eval dir
-  saver = tf.train.Saver([v for v in tf.all_variables() if "Adagrad" not in v.name])
+  saver = tfv1.train.Saver([v for v in tf.all_variables() if "Adagrad" not in v.name])
   print("Restoring all non-adagrad variables from best model in eval dir...")
   curr_ckpt = util.load_ckpt(saver, sess, "eval")
   print("Restored %s." % curr_ckpt)
@@ -192,7 +194,7 @@ def restore_best_model():
   new_model_name = curr_ckpt.split("/")[-1].replace("bestmodel", "model")
   new_fname = os.path.join(FLAGS.log_root, "train", new_model_name)
   print("Saving model to %s..." % (new_fname))
-  new_saver = tf.train.Saver() # this saver saves all variables that now exist, including Adagrad variables
+  new_saver = tfv1.train.Saver() # this saver saves all variables that now exist, including Adagrad variables
   new_saver.save(sess, new_fname)
   print("Saved.")
   exit()
@@ -200,7 +202,7 @@ def restore_best_model():
 
 def convert_to_coverage_model():
     """Load non-coverage checkpoint, add initialized extra variables for coverage, and save as new checkpoint"""
-    tf.logging.info("converting non-coverage model to coverage model..")
+    tfv1.logging.info("converting non-coverage model to coverage model..")
 
     # initialize an entire coverage model from scratch
     sess = tf.Session(config=util.get_config())
@@ -212,7 +214,7 @@ def convert_to_coverage_model():
     sess.run(tf.global_variables_initializer())
 
     # load all non-coverage weights from checkpoint
-    saver = tf.train.Saver([v for v in tf.global_variables(
+    saver = tfv1.train.Saver([v for v in tf.global_variables(
     ) if "coverage" not in v.name and "Adagrad" not in v.name])
     print("restoring non-coverage variables...")
     curr_ckpt = util.load_ckpt(saver, sess)
@@ -221,7 +223,7 @@ def convert_to_coverage_model():
     # save this model and quit
     new_fname = curr_ckpt + '_cov_init'
     print(("saving model to %s..." % (new_fname)))
-    new_saver = tf.train.Saver()  # this one will save all variables that now exist
+    new_saver = tfv1.train.Saver()  # this one will save all variables that now exist
     new_saver.save(sess, new_fname)
     print("saved.")
     exit()
@@ -229,7 +231,7 @@ def convert_to_coverage_model():
 
 def convert_linear_attn_to_hier_model():
     """Load non-coverage checkpoint, add initialized extra variables for coverage, and save as new checkpoint"""
-    tf.logging.info("converting linear model to hier model..")
+    tfv1.logging.info("converting linear model to hier model..")
 
     # initialize an entire coverage model from scratch
     sess = tf.Session(config=util.get_config())
@@ -237,7 +239,7 @@ def convert_linear_attn_to_hier_model():
     sess.run(tf.global_variables_initializer())
 
     # load all non-coverage weights from checkpoint
-    saver = tf.train.Saver([v for v in tf.global_variables(
+    saver = tfv1.train.Saver([v for v in tf.global_variables(
     ) if "Linear--Section-Features" not in v.name and "v_sec" not in v.name and "Adagrad" not in v.name])
     print("restoring variables...")
     curr_ckpt = util.load_ckpt(saver, sess)
@@ -246,7 +248,7 @@ def convert_linear_attn_to_hier_model():
     # save this model and quit
     new_fname = curr_ckpt
     print(("saving model to %s..." % (new_fname)))
-    new_saver = tf.train.Saver()  # this one will save all variables that now exist
+    new_saver = tfv1.train.Saver()  # this one will save all variables that now exist
     new_saver.save(sess, new_fname)
     print("saved.")
     exit()
@@ -268,7 +270,7 @@ def setup_training(model, batcher):
 
     if FLAGS.restore_best_model:
       restore_best_model()
-    saver = tf.train.Saver(max_to_keep=3) # keep 3 checkpoints at a time
+    saver = tfv1.train.Saver(max_to_keep=3) # keep 3 checkpoints at a time
 
     sv = tf.train.Supervisor(logdir=train_dir,
                              is_chief=True,
@@ -278,7 +280,7 @@ def setup_training(model, batcher):
                              save_model_secs=60,  # checkpoint every 60 secs
                              global_step=model.global_step)
     summary_writer = sv.summary_writer
-    tf.logging.info("Preparing or waiting for session...")
+    tfv1.logging.info("Preparing or waiting for session...")
     sess_context_manager = sv.prepare_or_wait_for_session(
         config=util.get_config())
 
@@ -287,38 +289,44 @@ def setup_training(model, batcher):
       sess_context_manager = tf_debug.LocalCLIDebugWrapperSession(sess_context_manager)
       sess_context_manager.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
 
-    tf.logging.info("Created session.")
+    tfv1.logging.info("Created session.")
     try:
         # this is an infinite loop until interrupted
         run_training(model, batcher, sess_context_manager, sv, summary_writer)
     except KeyboardInterrupt:
-        tf.logging.info(
+        tfv1.logging.info(
             "Caught keyboard interrupt on worker. Stopping supervisor...")
         sv.stop()
 
 
 def run_training(model, batcher, sess_context_manager, sv, summary_writer):
     """Repeatedly runs training iterations, logging loss to screen and writing summaries"""
-    tf.logging.info("starting run_training")
+    tfv1.logging.info("starting run_training")
     with sess_context_manager as sess:
         while True:  # repeats until interrupted
+            print('#'*78)
+            print('Montagem dos batches!!!\n')
             batch = batcher.next_batch()
 
-            tf.logging.info('running training step...')
+            tfv1.logging.info('running training step...')
+            print('\n'+'#'*78)
+            print('Inicio do treino!!!\n')
             t0 = time.time()
             results = model.run_train_step(sess, batch)
             t1 = time.time()
-            tf.logging.info('seconds for training step: %.3f', t1 - t0)
+            tfv1.logging.info('seconds for training step: %.3f', t1 - t0)
+            print(f'seconds for training step: {t1-t0}')
 
             loss = results['loss']
-            tf.logging.info('loss: %f', loss)  # print the loss to screen
+            tfv1.logging.info('loss: %f', loss)  # print the loss to screen
+            print(f'loss: {loss}')
             if not np.isfinite(loss):
               print('loss is nan!!!!!')
               raise Exception("Loss is not finite. Stopping.")
             if FLAGS.coverage:
                 coverage_loss = results['coverage_loss']
                 # print the coverage loss to screen
-                tf.logging.info("coverage_loss: %f", coverage_loss)
+                tfv1.logging.info("coverage_loss: %f", coverage_loss)
 
             # get the summaries and iteration number so we can write summaries
             # to tensorboard
@@ -335,7 +343,7 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
 def run_eval(model, batcher, vocab, hier=False):
   """Repeatedly runs eval iterations, logging to screen and writing summaries. Saves the model with the best loss seen so far."""
   model.build_graph() # build the graph
-  saver = tf.train.Saver(max_to_keep=3) # we will keep 3 best checkpoints at a time
+  saver = tfv1.train.Saver(max_to_keep=3) # we will keep 3 best checkpoints at a time
   sess = tf.Session(config=util.get_config())
   eval_dir = os.path.join(FLAGS.log_root, "eval") # make a subdir of the root dir for eval data
   bestmodel_save_path = os.path.join(eval_dir, 'bestmodel') # this is where checkpoints of best models are saved
@@ -351,14 +359,14 @@ def run_eval(model, batcher, vocab, hier=False):
     t0=time.time()
     results = model.run_eval_step(sess, batch)
     t1=time.time()
-    tf.logging.info('seconds for batch: %.2f', t1-t0)
+    tfv1.logging.info('seconds for batch: %.2f', t1-t0)
 
     # print the loss and coverage loss to screen
     loss = results['loss']
-    tf.logging.info('loss: %f', loss)
+    tfv1.logging.info('loss: %f', loss)
     if FLAGS.coverage:
       coverage_loss = results['coverage_loss']
-      tf.logging.info("coverage_loss: %f", coverage_loss)
+      tfv1.logging.info("coverage_loss: %f", coverage_loss)
 
     # add summaries
     summaries = results['summaries']
@@ -378,7 +386,7 @@ def run_eval(model, batcher, vocab, hier=False):
     # If running_avg_loss is best so far, save this checkpoint (early stopping).
     # These checkpoints will appear as bestmodel-<iteration_number> in the eval dir
     if best_loss is None or (running_avg_loss is not None and running_avg_loss < best_loss):
-      tf.logging.info('Found new best model with %.3f running_avg_loss. Saving to %s', running_avg_loss, bestmodel_save_path)
+      tfv1.logging.info('Found new best model with %.3f running_avg_loss. Saving to %s', running_avg_loss, bestmodel_save_path)
       saver.save(sess, bestmodel_save_path, global_step=train_step, latest_filename='checkpoint_best')
       best_loss = running_avg_loss
 
@@ -393,8 +401,8 @@ def main(unused_argv):
         raise Exception("Problem with flags: %s" % unused_argv)
 
     # choose what level of logging you want
-    tf.logging.set_verbosity(tf.logging.INFO)
-    tf.logging.info('Starting seq2seq_attention in %s mode...', (FLAGS.mode))
+    tfv1.logging.set_verbosity(tfv1.logging.INFO)
+    tfv1.logging.info('Starting seq2seq_attention in %s mode...', (FLAGS.mode))
 
     # Change log_root to FLAGS.log_root/FLAGS.exp_name and create the dir if
     # necessary
@@ -429,7 +437,8 @@ def main(unused_argv):
                    'max_intro_len', 'max_conclusion_len',
                    'max_intro_sents', 'max_conclusion_sents', 'max_section_sents',
                    'enc_layers', 'optimizer', 'multi_layer_encoder',
-                   'num_sections', 'hier', 'phased_lstm', 'output_weight_sharing', 'use_do' ,'do_prob', 'embeddings_path', 'pretrained_embeddings', 'pubmed', 'num_gpus', 'split_intro', 'temperature']
+                   'num_sections', 'hier', 'phased_lstm', 'output_weight_sharing', 'use_do' ,'do_prob', 
+                   'embeddings_path', 'pretrained_embeddings', 'pubmed', 'num_gpus', 'split_intro', 'temperature']
     hps_dict = {}
     for key, val in list(FLAGS.__flags.items()):  # for each flag
         if key in hparam_list:  # if it's in the list
@@ -446,7 +455,7 @@ def main(unused_argv):
                       FLAGS.section_names_key,
                       FLAGS.sections_key)
 
-    tf.set_random_seed(111)  # a seed value for randomness
+    tfv1.set_random_seed(111)  # a seed value for randomness
 
     if hps.mode == 'train':
         print("creating model...")
@@ -470,4 +479,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tfv1.app.run()

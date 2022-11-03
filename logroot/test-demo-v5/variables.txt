@@ -1,0 +1,40 @@
+Time to build graph: 46.42661499977112 seconds
+##############################################################################
+printing model variables:
+seq2seq/embedding/embedding:0: shape=[50, 10], variable_parameters=500
+seq2seq/encoder/word_level_encoder/bidirectional_rnn/fw/lstm_cell/kernel:0: shape=[20, 40], variable_parameters=800
+seq2seq/encoder/word_level_encoder/bidirectional_rnn/fw/lstm_cell/bias:0: shape=[40], variable_parameters=40
+seq2seq/encoder/word_level_encoder/bidirectional_rnn/bw/lstm_cell/kernel:0: shape=[20, 40], variable_parameters=800
+seq2seq/encoder/word_level_encoder/bidirectional_rnn/bw/lstm_cell/bias:0: shape=[40], variable_parameters=40
+seq2seq/encoder/word_level_encoder/reduce_final_st/w_reduce_c:0: shape=[20, 10], variable_parameters=200
+seq2seq/encoder/word_level_encoder/reduce_final_st/w_reduce_h:0: shape=[20, 10], variable_parameters=200
+seq2seq/encoder/word_level_encoder/reduce_final_st/bias_reduce_c:0: shape=[10], variable_parameters=10
+seq2seq/encoder/word_level_encoder/reduce_final_st/bias_reduce_h:0: shape=[10], variable_parameters=10
+seq2seq/encoder/section_level_encoder/bidirectional_rnn/fw/lstm_cell/kernel:0: shape=[20, 40], variable_parameters=800
+seq2seq/encoder/section_level_encoder/bidirectional_rnn/fw/lstm_cell/bias:0: shape=[40], variable_parameters=40
+seq2seq/encoder/section_level_encoder/bidirectional_rnn/bw/lstm_cell/kernel:0: shape=[20, 40], variable_parameters=800
+seq2seq/encoder/section_level_encoder/bidirectional_rnn/bw/lstm_cell/bias:0: shape=[40], variable_parameters=40
+seq2seq/encoder/section_level_encoder/reduce_final_st/w_reduce_c:0: shape=[20, 10], variable_parameters=200
+seq2seq/encoder/section_level_encoder/reduce_final_st/w_reduce_h:0: shape=[20, 10], variable_parameters=200
+seq2seq/encoder/section_level_encoder/reduce_final_st/bias_reduce_c:0: shape=[10], variable_parameters=10
+seq2seq/encoder/section_level_encoder/reduce_final_st/bias_reduce_h:0: shape=[10], variable_parameters=10
+seq2seq/decoder/attention_decoder/W_h:0: shape=[1, 1, 20, 20], variable_parameters=400
+seq2seq/decoder/attention_decoder/W_h_s:0: shape=[1, 1, 20, 20], variable_parameters=400
+seq2seq/decoder/attention_decoder/v_sec:0: shape=[20], variable_parameters=20
+seq2seq/decoder/attention_decoder/v:0: shape=[20], variable_parameters=20
+seq2seq/decoder/attention_decoder/Linear/Matrix:0: shape=[30, 10], variable_parameters=300
+seq2seq/decoder/attention_decoder/Linear/Bias:0: shape=[10], variable_parameters=10
+seq2seq/decoder/attention_decoder/lstm_cell/kernel:0: shape=[20, 40], variable_parameters=800
+seq2seq/decoder/attention_decoder/lstm_cell/bias:0: shape=[40], variable_parameters=40
+seq2seq/decoder/attention_decoder/Attention/Linear/Matrix:0: shape=[20, 20], variable_parameters=400
+seq2seq/decoder/attention_decoder/Attention/Linear/Bias:0: shape=[20], variable_parameters=20
+seq2seq/decoder/attention_decoder/Attention/attention_sections/Linear--Section-Features/Matrix:0: shape=[20, 20], variable_parameters=400
+seq2seq/decoder/attention_decoder/Attention/attention_sections/Linear--Section-Features/Bias:0: shape=[20], variable_parameters=20
+seq2seq/decoder/attention_decoder/calculate_pgen/Linear/Matrix:0: shape=[50, 1], variable_parameters=50
+seq2seq/decoder/attention_decoder/calculate_pgen/Linear/Bias:0: shape=[1], variable_parameters=1
+seq2seq/decoder/attention_decoder/AttnOutputProjection/Linear/Matrix:0: shape=[30, 10], variable_parameters=300
+seq2seq/decoder/attention_decoder/AttnOutputProjection/Linear/Bias:0: shape=[10], variable_parameters=10
+seq2seq/output_projection/w:0: shape=[10, 50], variable_parameters=500
+seq2seq/output_projection/b:0: shape=[50], variable_parameters=50
+total model parameters: 8441
+##############################################################################

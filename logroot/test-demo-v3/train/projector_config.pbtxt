@@ -1,0 +1,5 @@
+model_checkpoint_path: "logroot/test-demo-v3/train/model.ckpt-0"
+embeddings {
+  tensor_name: "seq2seq/embedding/embedding:0"
+  metadata_path: "logroot/test-demo-v3/train/vocab_metadata.tsv"
+}

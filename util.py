@@ -18,10 +18,12 @@ import traceback
 """This file contains some utility functions"""
 
 import tensorflow as tf
+import tensorflow.compat.v1 as tfv1
 from tensorflow.contrib import learn
 import time
 import os
 import numpy as np
+tfv1.disable_v2_behavior()
 FLAGS = tf.app.flags.FLAGS
 
 
@@ -56,7 +58,7 @@ def load_embeddings(fpath, word_to_id, emd_init_var=0.25):
 
 def get_config():
   """Returns config for tf.session"""
-  config = tf.ConfigProto(allow_soft_placement=True)
+  config = tfv1.ConfigProto(allow_soft_placement=True)
   config.gpu_options.allow_growth=True
   return config
 

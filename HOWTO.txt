@@ -1,0 +1,9 @@
+
+
+
+1 - Transformar dataset para formato correto:
+    -  python ./scripts/json_to_bin.py ./data/demofile-utf.txt ./data/output.bin --vocab_file ./data/output.vocab
+
+2 - Alterar arquivo run.sh e rodar
+
+Esse algoritmo roda eternamente até que haja interrupção via teclado. Precisa saber como acompanhar o loss e evolução do treino...

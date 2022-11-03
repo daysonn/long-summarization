@@ -24,6 +24,8 @@ from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.ops import math_ops
+import tensorflow.compat.v1 as tfv1
+tfv1.disable_v2_behavior()
 FLAGS = tf.app.flags.FLAGS
 
 # Note: this function is based on tf.contrib.legacy_seq2seq_attention_decoder, which is now outdated.
@@ -172,7 +174,7 @@ def attention_decoder(decoder_inputs,
             # Update coverage vector
             coverage += array_ops.reshape(attn_dist, [batch_size, -1, 1, 1]) # shape=(batch_size, seq_len,1,1)
           else:
-            with tf.variable_scope("attention_words_sections"):
+            with tfv1.variable_scope("attention_words_sections"):
               coverage_features = nn_ops.conv2d(coverage, w_c, [1, 1, 1, 1], "SAME") # c has shape (batch_size, seq_len, 1, attention_vec_size)
               e = math_ops.reduce_sum(v * math_ops.tanh(encoder_features + decoder_features + encoder_section_features + coverage_features), [2, 3])  # shape (batch_size,seq_len)
               attn_dist = masked_attention(e, enc_padding_mask)
@@ -180,7 +182,7 @@ def attention_decoder(decoder_inputs,
         else:
           # Calculate v^T tanh(W_h h_i + W_s s_t + b_attn)
           if hier:
-            with tf.variable_scope("attention_words_sections"):
+            with tfv1.variable_scope("attention_words_sections"):
               e = math_ops.reduce_sum(v * math_ops.tanh(encoder_features + decoder_features + encoder_section_features), [2, 3]) #[batch_size x seq_len]
             if enc_padding_mask is not None:
               attn_dist = masked_attention(e, enc_padding_mask)
@@ -252,7 +254,7 @@ def attention_decoder(decoder_inputs,
 
       # Calculate p_gen
       if pointer_gen:
-        with tf.variable_scope('calculate_pgen'):
+        with tfv1.variable_scope('calculate_pgen'):
           p_gen = linear([context_vector, state.c, state.h, x], 1, True) # Tensor shape (batch_size, 1)
           p_gen = tf.sigmoid(p_gen)
           p_gens.append(p_gen)
@@ -303,15 +305,15 @@ def linear(args, output_size, bias, bias_start=0.0, scope=None):
       total_arg_size += shape[1]
 
   # Now the computation.
-  with tf.variable_scope(scope or "Linear"):
-    matrix = tf.get_variable("Matrix", [total_arg_size, output_size])
+  with tfv1.variable_scope(scope or "Linear"):
+    matrix = tfv1.get_variable("Matrix", [total_arg_size, output_size])
     if len(args) == 1:
       res = tf.matmul(args[0], matrix)
     else:
       res = tf.matmul(tf.concat(axis=1, values=args), matrix)
     if not bias:
       return res
-    bias_term = tf.get_variable(
+    bias_term = tfv1.get_variable(
         "Bias", [output_size], initializer=tf.constant_initializer(bias_start))
   return res + bias_term
 
@@ -351,14 +353,14 @@ def linear_weight_sharing(args, output_size, weights, bias, bias_start=0.0, scop
       total_arg_size += shape[1]
 
   # Now the computation.
-  with tf.variable_scope(scope or "Linear"):
-    matrix = tf.get_variable("Matrix", [total_arg_size, output_size])
+  with tfv1.variable_scope(scope or "Linear"):
+    matrix = tfv1.get_variable("Matrix", [total_arg_size, output_size])
     if len(args) == 1:
       res = tf.matmul(args[0], matrix)
     else:
       res = tf.matmul(tf.concat(axis=1, values=args), matrix)
     if not bias:
       return res
-    bias_term = tf.get_variable(
+    bias_term = tfv1.get_variable(
         "Bias", [output_size], initializer=tf.constant_initializer(bias_start))
   return res + bias_term

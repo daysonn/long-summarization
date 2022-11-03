@@ -23,11 +23,14 @@ import os
 import time
 import numpy as np
 import tensorflow as tf
+import tensorflow.compat.v1 as tfv1
 from util import load_embeddings
 from tensorflow.contrib.tensorboard.plugins import projector
 from tensorflow.python.ops import array_ops
 from six.moves import xrange
 from tensorflow.python import debug as tf_debug
+
+tfv1.disable_v2_behavior()
 FLAGS = tf.app.flags.FLAGS
 
 class SummarizationModel(object):
@@ -38,6 +41,7 @@ class SummarizationModel(object):
     self._cur_gpu = 0
     self._vocab = vocab
     self._num_gpus = num_gpus
+    print("GPU:", num_gpus)
     if FLAGS.new_attention and FLAGS.hier:
       print('using linear attention mechanism for considering sections')
       from attention_decoder_new import attention_decoder
@@ -51,25 +55,25 @@ class SummarizationModel(object):
     hps = self._hps
 
     # encoder part
-    self._enc_batch = tf.placeholder(tf.int32, [hps.batch_size, None], name='enc_batch')
-    self._enc_padding_mask = tf.placeholder(tf.float32, [hps.batch_size, None], name='enc_padding_mask')
+    self._enc_batch = tfv1.placeholder(tf.int32, [hps.batch_size, None], name='enc_batch')
+    self._enc_padding_mask = tfv1.placeholder(tf.float32, [hps.batch_size, None], name='enc_padding_mask')
     if self._hps.hier:
-      self._enc_batch_sections = tf.placeholder(tf.int32, [hps.batch_size, hps.num_sections, None], name='enc_batch_sections')
-      self._doc_sec_lens = tf.placeholder(tf.int32, [hps.batch_size]) # length of doc in num sections
-      self._batch_sections_len = tf.placeholder(tf.int32, [hps.batch_size, hps.num_sections])
-      self._enc_section_padding_mask = tf.placeholder(tf.int32, [hps.batch_size, hps.num_sections, None], name='enc_section_padding_mask')
-    self._enc_lens = tf.placeholder(tf.int32, [hps.batch_size], name='enc_lens')
+      self._enc_batch_sections = tfv1.placeholder(tf.int32, [hps.batch_size, hps.num_sections, None], name='enc_batch_sections')
+      self._doc_sec_lens = tfv1.placeholder(tf.int32, [hps.batch_size]) # length of doc in num sections
+      self._batch_sections_len = tfv1.placeholder(tf.int32, [hps.batch_size, hps.num_sections])
+      self._enc_section_padding_mask = tfv1.placeholder(tf.int32, [hps.batch_size, hps.num_sections, None], name='enc_section_padding_mask')
+    self._enc_lens = tfv1.placeholder(tf.int32, [hps.batch_size], name='enc_lens')
     if FLAGS.pointer_gen:
-      self._enc_batch_extend_vocab = tf.placeholder(tf.int32, [hps.batch_size, None], name='enc_batch_extend_vocab')
-      self._max_art_oovs = tf.placeholder(tf.int32, [], name='max_art_oovs')
+      self._enc_batch_extend_vocab = tfv1.placeholder(tf.int32, [hps.batch_size, None], name='enc_batch_extend_vocab')
+      self._max_art_oovs = tfv1.placeholder(tf.int32, [], name='max_art_oovs')
 
     # decoder part
-    self._dec_batch = tf.placeholder(tf.int32, [hps.batch_size, hps.max_dec_steps], name='dec_batch')
-    self._target_batch = tf.placeholder(tf.int32, [hps.batch_size, hps.max_dec_steps], name='target_batch')
-    self._dec_padding_mask = tf.placeholder(tf.float32, [hps.batch_size, hps.max_dec_steps], name='padding_mask')
+    self._dec_batch = tfv1.placeholder(tf.int32, [hps.batch_size, hps.max_dec_steps], name='dec_batch')
+    self._target_batch = tfv1.placeholder(tf.int32, [hps.batch_size, hps.max_dec_steps], name='target_batch')
+    self._dec_padding_mask = tfv1.placeholder(tf.float32, [hps.batch_size, hps.max_dec_steps], name='padding_mask')
 
     if hps.mode=="decode" and hps.coverage:
-      self.prev_coverage = tf.placeholder(tf.float32, [hps.batch_size, None], name='prev_coverage')
+      self.prev_coverage = tfv1.placeholder(tf.float32, [hps.batch_size, None], name='prev_coverage')
 
 
   def _make_feed_dict(self, batch, just_enc=False):
@@ -111,7 +115,7 @@ class SummarizationModel(object):
       fw_state, bw_state:
         Each are LSTMStateTuples of shape ([batch_size,hidden_dim],[batch_size,hidden_dim])
     """
-    with tf.variable_scope('encoder'):
+    with tfv1.variable_scope('encoder'):
       cell_fw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
       cell_bw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
       (encoder_outputs, (fw_st, bw_st)) = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, encoder_inputs, dtype=tf.float32, sequence_length=seq_len, swap_memory=True)
@@ -132,13 +136,13 @@ class SummarizationModel(object):
       state: LSTMStateTuple with hidden_dim units.
     """
     hidden_dim = self._hps.hidden_dim
-    with tf.variable_scope('reduce_final_st'):
+    with tfv1.variable_scope('reduce_final_st'):
 
       # Define weights and biases to reduce the cell and reduce the state
-      w_reduce_c = tf.get_variable('w_reduce_c', [hidden_dim * 2, hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
-      w_reduce_h = tf.get_variable('w_reduce_h', [hidden_dim * 2, hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
-      bias_reduce_c = tf.get_variable('bias_reduce_c', [hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
-      bias_reduce_h = tf.get_variable('bias_reduce_h', [hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
+      w_reduce_c = tfv1.get_variable('w_reduce_c', [hidden_dim * 2, hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
+      w_reduce_h = tfv1.get_variable('w_reduce_h', [hidden_dim * 2, hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
+      bias_reduce_c = tfv1.get_variable('bias_reduce_c', [hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
+      bias_reduce_h = tfv1.get_variable('bias_reduce_h', [hidden_dim], dtype=tf.float32, initializer=self.trunc_norm_init)
 
       # Apply linear layer
       old_c = tf.concat(axis=1, values=[fw_st.c, bw_st.c]) # Concatenation of fw and bw cell
@@ -163,7 +167,7 @@ class SummarizationModel(object):
         (batch_size, extended_vsize) arrays. extended_vsize is the vocab + article OOV
     """
 
-    with tf.variable_scope('final_distribution'):
+    with tfv1.variable_scope('final_distribution'):
       vocab_dists = [p_gen * dist for (p_gen,dist) in zip(self.p_gens, vocab_dists)]
       attn_dists = [(1-p_gen) * dist for (p_gen,dist) in zip(self.p_gens, attn_dists)]
 
@@ -213,7 +217,7 @@ class SummarizationModel(object):
     train_dir = os.path.join(FLAGS.log_root, "train")
     vocab_metadata_path = os.path.join(train_dir, "vocab_metadata.tsv")
     self._vocab.write_metadata(vocab_metadata_path) # write metadata file
-    summary_writer = tf.summary.FileWriter(train_dir)
+    summary_writer = tfv1.summary.FileWriter(train_dir)
     config = projector.ProjectorConfig()
     embedding = config.embeddings.add()
     embedding.tensor_name = embedding_var.name
@@ -245,20 +249,20 @@ class SummarizationModel(object):
     hps = self._hps
     vsize = self._vocab.size() # size of the vocabulary
     
-    with tf.variable_scope('seq2seq'):
+    with tfv1.variable_scope('seq2seq'):
       # Some initializers
       self.rand_unif_init = tf.random_uniform_initializer(-hps.rand_unif_init_mag, hps.rand_unif_init_mag, seed=123)
       self.trunc_norm_init = tf.truncated_normal_initializer(stddev=hps.trunc_norm_init_std)
 
 
-      with tf.variable_scope('embedding'):
+      with tfv1.variable_scope('embedding'):
         if hps.pretrained_embeddings:
           word2vec = load_embeddings(hps.embeddings_path, self._vocab.word2id, hps.rand_unif_init_mag)
-          self.embedding = tf.get_variable('embedding', [vsize, hps.emb_dim],
+          self.embedding = tfv1.get_variable('embedding', [vsize, hps.emb_dim],
                                     dtype=tf.float32, initializer=tf.constant_initializer(word2vec))
           # self.assign_embedding = tf.assign(self.embedding, word2vec)
         else:
-          self.embedding = tf.get_variable('embedding', [vsize, hps.emb_dim],
+          self.embedding = tfv1.get_variable('embedding', [vsize, hps.emb_dim],
                                       dtype=tf.float32, initializer=self.trunc_norm_init)
         if hps.mode=="train": self._add_emb_vis(self.embedding) # add to tensorboard
 
@@ -275,14 +279,14 @@ class SummarizationModel(object):
 
       # Hierarchical attention model
       if self._hps.hier:
-        with tf.variable_scope('encoder'), tf.device(self._next_device()):
+        with tfv1.variable_scope('encoder'), tf.device(self._next_device()):
           sec_enc_outs = []
           states_fw = []
           states_bw = []
           states = []
 
           # level 1, encode words to sections
-          with tf.variable_scope("word_level_encoder", reuse=tf.AUTO_REUSE) as scope:
+          with tfv1.variable_scope("word_level_encoder", reuse=tfv1.AUTO_REUSE) as scope:
             encoder_outputs_words = []
             cell_fw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
             cell_bw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
@@ -311,7 +315,7 @@ class SummarizationModel(object):
           doc_sections_h = tf.stack([s.h for s in states], axis=1)   # [batch x num_sections x hidden_size]
           doc_sections_c = tf.stack([s.c for s in states], axis=1)   # [batch x num_sections x hidden_size]
 
-          with tf.variable_scope("section_level_encoder"):
+          with tfv1.variable_scope("section_level_encoder"):
             if FLAGS.section_level_encoder == 'RNN':
               cell_fw_1 = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
               cell_bw_1 = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
@@ -343,8 +347,8 @@ class SummarizationModel(object):
               encoder_output_sections = doc_sections_h         
       
       elif not self._hps.multi_layer_encoder:
-        with tf.variable_scope('encoder'):
-          with tf.variable_scope('word_level_encoder'):
+        with tfv1.variable_scope('encoder'):
+          with tfv1.variable_scope('word_level_encoder'):
             cell_fw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
             cell_bw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
             (encoder_outputs, (fw_st, bw_st)) =\
@@ -356,7 +360,7 @@ class SummarizationModel(object):
       elif self._hps.multi_layer_encoder:
         # TODO: check
         for layer_i in xrange(self._hps.enc_layers):
-          with tf.variable_scope('encoder%d'%layer_i), tf.device(
+          with tfv1.variable_scope('encoder%d'%layer_i), tf.device(
               self._next_device()):
             cell_fw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
             cell_bw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
@@ -380,13 +384,13 @@ class SummarizationModel(object):
       if self._hps.hier:
         self._dec_in_state = doc_sections_state
       else:
-        with tf.variable_scope('encoder'):
-          with tf.variable_scope('word_level_encoder'):
+        with tfv1.variable_scope('encoder'):
+          with tfv1.variable_scope('word_level_encoder'):
             self._dec_in_state = self._reduce_states(fw_st, bw_st) 
         
       # Add the decoder
 
-      with tf.variable_scope('decoder'), tf.device(self._next_device()):
+      with tfv1.variable_scope('decoder'), tf.device(self._next_device()):
         cell = tf.contrib.rnn.LSTMCell(
           self._hps.hidden_dim,
           state_is_tuple=True,
@@ -432,29 +436,29 @@ class SummarizationModel(object):
         
 
       # Project decoder output to vocabulary
-      with tf.variable_scope('output_projection'), tf.device(self._next_device()):
+      with tfv1.variable_scope('output_projection'), tf.device(self._next_device()):
         if self._hps.output_weight_sharing:
           # share weights of embedding layer with projection
           # self.embedding is in shape [vsize, hps.emb_dim]
-          w_proj = tf.get_variable('w_proj', [self._hps.emb_dim, self._hps.hidden_dim],
+          w_proj = tfv1.get_variable('w_proj', [self._hps.emb_dim, self._hps.hidden_dim],
                               dtype=tf.float32, initializer=self.trunc_norm_init)
           w = tf.tanh(tf.transpose(tf.matmul(self.embedding, w_proj))) # shape = [vsize, hps.hidden_dim]
           
   #         w_t = tf.transpose(w)
-          b = tf.get_variable('b', [vsize],
+          b = tfv1.get_variable('b', [vsize],
                               dtype=tf.float32, initializer=self.trunc_norm_init)
         else: 
-          w = tf.get_variable('w', [self._hps.hidden_dim, vsize],
+          w = tfv1.get_variable('w', [self._hps.hidden_dim, vsize],
                               dtype=tf.float32, initializer=self.trunc_norm_init)
   #         w_t = tf.transpose(w)
-          b = tf.get_variable('b', [vsize],
+          b = tfv1.get_variable('b', [vsize],
                               dtype=tf.float32, initializer=self.trunc_norm_init)
         # vocabulary score at each decoder step
         vocab_scores = []
         for i,output in enumerate(decoder_outputs):
           if i > 0:
-            tf.get_variable_scope().reuse_variables()
-          vocab_scores.append(tf.nn.xw_plus_b(output, w, b)) # apply the linear layer
+            tfv1.get_variable_scope().reuse_variables()
+          vocab_scores.append(tfv1.nn.xw_plus_b(output, w, b)) # apply the linear layer
 
         # the final vocab distribution for each decoder time step
         # shape of each element is [batch_size, vsize]
@@ -464,9 +468,9 @@ class SummarizationModel(object):
       # pointing / generating
       if FLAGS.pointer_gen:
         final_dists = self._calc_final_dist(vocab_dists, self.attn_dists)
-#         log_dists = [tf.log(dist) for dist in final_dists]
+#         log_dists = [tf.math.log(dist) for dist in final_dists]
       else:
-#         log_dists = [tf.log(dist) for dist in vocab_dists]
+#         log_dists = [tf.math.log(dist) for dist in vocab_dists]
         final_dists = vocab_dists
         
 
@@ -474,7 +478,7 @@ class SummarizationModel(object):
       
       if self._hps.mode in ['train', 'eval']:
         # Calculate the loss
-        with tf.variable_scope('loss'), tf.device(self._next_device()):
+        with tfv1.variable_scope('loss'), tf.device(self._next_device()):
           if FLAGS.pointer_gen:
             # Calculate the loss per step
             # This is fiddly; we use tf.gather_nd to pick out the gold target words
@@ -487,7 +491,7 @@ class SummarizationModel(object):
               indices = tf.stack( (batch_nums, targets), axis=1) # shape (batch_size, 2)
               # shape (batch_size). loss on this step for each batch
               gold_probs = tf.gather_nd(dist, indices)
-              losses = -tf.log(gold_probs)
+              losses = -tf.math.log(gold_probs)
               loss_per_step.append(losses)
 
             # Apply dec_padding_mask mask and get loss
@@ -499,15 +503,15 @@ class SummarizationModel(object):
             self._loss = tf.contrib.seq2seq.sequence_loss(
               tf.stack(vocab_scores, axis=1), self._target_batch, self._dec_padding_mask) # this applies softmax internally
 
-          tf.summary.scalar('loss', self._loss)
+          tfv1.summary.scalar('loss', self._loss)
 
           # Calculate coverage loss from the attention distributions
           if self._hps.coverage:
-            with tf.variable_scope('coverage_loss'):
+            with tfv1.variable_scope('coverage_loss'):
               self._coverage_loss = _coverage_loss(self.attn_dists, self._dec_padding_mask)
-              tf.summary.scalar('coverage_loss', self._coverage_loss)
+              tfv1.summary.scalar('coverage_loss', self._coverage_loss)
             self._total_loss = self._loss + self._hps.cov_loss_wt * self._coverage_loss
-            tf.summary.scalar('total_loss', self._total_loss)
+            tfv1.summary.scalar('total_loss', self._total_loss)
             
         # ---------------------------/
 
@@ -516,18 +520,18 @@ class SummarizationModel(object):
         assert len(final_dists) == 1 # final_dists is a singleton list containing shape (batch_size, extended_vsize)
         final_dists = final_dists[0]
         topk_probs, self._topk_ids = tf.nn.top_k(final_dists, hps.batch_size*2) # take the k largest probs. note batch_size=beam_size in decode mode
-        self._topk_log_probs = tf.log(topk_probs)
+        self._topk_log_probs = tf.math.log(topk_probs)
 
   def _add_train_op(self):
     """Sets self._train_op, the op to run for training."""
     self._lr_rate = tf.maximum(
       self._hps.min_lr,  # min_lr_rate.
-      tf.train.exponential_decay(self._hps.lr, self.global_step, 30000, 0.98))
+      tfv1.train.exponential_decay(self._hps.lr, self.global_step, 30000, 0.98))
     
     
     # Take gradients of the trainable variables w.r.t. the loss function to minimize
     loss_to_minimize = self._total_loss if self._hps.coverage else self._loss
-    tvars = tf.trainable_variables()
+    tvars = tfv1.trainable_variables()
     gradients = tf.gradients(loss_to_minimize, tvars, aggregation_method=tf.AggregationMethod.EXPERIMENTAL_ACCUMULATE_N)
 
     # Clip the gradients
@@ -535,11 +539,11 @@ class SummarizationModel(object):
       grads, global_norm = tf.clip_by_global_norm(gradients, self._hps.max_grad_norm)
 
     # Add a summary
-    tf.summary.scalar('global_norm', global_norm)
+    tfv1.summary.scalar('global_norm', global_norm)
 
     # Apply adagrad optimizer
     if self._hps.optimizer == 'adagrad':
-      optimizer = tf.train.AdagradOptimizer(
+      optimizer = tfv1.train.AdagradOptimizer(
         self._hps.lr, initial_accumulator_value=self._hps.adagrad_init_acc)
 
     elif self._hps.optimizer == 'adam':    
@@ -549,7 +553,7 @@ class SummarizationModel(object):
     elif self._hps.optimizer == 'sgd':
       # SGD
       optimizer = tf.train.GradientDescentOptimizer(self._lr_rate)
-      tf.summary.scalar('learning rate', self._lr_rate)
+      tfv1.summary.scalar('learning rate', self._lr_rate)
     
     else:
       raise Exception('Invalid optimizer: ', self._hps.optimizer)
@@ -569,22 +573,32 @@ class SummarizationModel(object):
     self.global_step = tf.Variable(0, name='global_step', trainable=False)
     if self._hps.mode == 'train':
       self._add_train_op()
-    self._summaries = tf.summary.merge_all()
+    self._summaries = tfv1.summary.merge_all()
     t1 = time.time()
     tf.logging.info('Time to build graph: %i seconds', t1 - t0)
+    to_file = f"Time to build graph: {t1 - t0} seconds" + "\n"
     
-    print('#'*78,'\nprinting model variables:')
+    print('\n#'*78,'\nprinting model variables:')
+    to_file = to_file + '#'*78 + '\nprinting model variables:\n'
     total_parameters = 0
-    for variable in tf.trainable_variables():
+    for variable in tfv1.trainable_variables():
         shape = variable.get_shape().as_list()
         variable_parameters = 1
         for dim in shape:
             variable_parameters *= dim
         print('{:}: shape={:}, variable_parameters={:}'.format(
           variable.name, shape, variable_parameters))
+        to_file = to_file + '{:}: shape={:}, variable_parameters={:}\n'.format(variable.name, shape, variable_parameters)
         total_parameters += variable_parameters
     print('total model parameters: {:}'.format(total_parameters))
+    to_file = to_file + 'total model parameters: {:}\n'.format(total_parameters)
     print('#'*78)
+    to_file = to_file + '#'*78
+
+    print(FLAGS.log_root)
+    f = open(os.path.join(FLAGS.log_root, "variables.txt"), "w")
+    f.write(to_file)
+    f.close()
 
   def run_train_step(self, sess, batch):
     feed_dict = self._make_feed_dict(batch)
@@ -606,6 +620,8 @@ class SummarizationModel(object):
     if not np.isfinite(res['loss']):
       print('loss is nan!!!!!')
       raise Exception("Loss is not finite. Stopping.")
+
+    print('Loss:', res['loss'])
     
 #     except tf.errors.InvalidArgumentError:
 #       import pdb; pdb.set_trace()

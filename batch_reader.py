@@ -26,7 +26,10 @@ from threading import Thread
 import time
 import numpy as np
 import tensorflow as tf
+import tensorflow.compat.v1 as tfv1
 import data
+
+tfv1.disable_v2_behavior()
 
 # To represent list of sections as string and retrieve it back
 SECTION_SEPARATOR = ' <SCTN/> '
@@ -583,7 +586,7 @@ class Batcher(object):
         """
         # If the batch queue is empty, print a warning
         if self._batch_queue.qsize() == 0:
-            tf.logging.warning(
+            tfv1.logging.warning(
                 'Bucket input queue is empty when calling next_batch.'
                 ' Bucket queue size: %i, Input queue size: %i',
                 self._batch_queue.qsize(),

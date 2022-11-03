@@ -1,6 +1,6 @@
 """
 Script to convert jsonlines files to tensorflow binary files
-Usage: python json_to_bin.py   input.txt   output.bin
+Usage: python json_to_bin.py   demofile.txt   output_demo.bin
 If you want to create vocabulary you can pass additional path to the output vocab file
 python json_to_bin.py   input.txt    output.bin   --vocab_file   output.vocab
 """
