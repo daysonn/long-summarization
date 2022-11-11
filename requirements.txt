@@ -1,4 +1,7 @@
-tensorflow-gpu==1.15.2
-pandas
-tabulate
+tensorflow-gpu==1.15
+pandas==1.1.5
+numpy==1.19.5
+tabulate==0.8.10
 pyrouge
+nvidia-pyindex
+nvidia-tensorflow[horovod]
