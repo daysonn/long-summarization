@@ -1,5 +1,5 @@
 python run_summarization.py \
---mode=decode \
+--mode=train \
 --data_path=./data/val_data_pt.bin \
 --vocab_path=./data/val_vocab.vocab \
 --log_root=logroot \
