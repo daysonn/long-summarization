@@ -1,0 +1,10 @@
+
+1 - Transformar dataset para formato de treino do TF:
+
+    Treino: python ./scripts/json_to_bin.py ./data/dataset-pt-treino.txt ./data/treino_data_pt.bin --vocab_file ./data/vocab.vocab
+    Validação: python ./scripts/json_to_bin.py ./data/dataset-pt-val.txt ./data/val_data_pt.bin 
+    Teste: python ./scripts/json_to_bin.py ./data/dataset-pt-teste.txt ./data/teste_data_pt.bin 
+
+2 - Executar os arquivos run_train.sh, run_eval.sh e run_decode.sh
+
+Esse algoritmo roda eternamente até que haja interrupção via teclado. Precisa saber como acompanhar o loss e evolução do treino...
