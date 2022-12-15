@@ -1,0 +1,21 @@
+python run_summarization.py \
+--mode=eval \
+--data_path=/home/dayson/long-summarization/data/dataset_v4/val_data_pt.bin \
+--vocab_path=/home/dayson/long-summarization/data/dataset_v4/vocab.vocab \
+--log_root=/home/dayson/long-summarization/logroot \
+--exp_name=summ_cohan_dataset_v4 \
+--max_dec_steps=210 \
+--max_enc_steps=2500 \
+--emb_dim=10 \
+--num_sections=5 \
+--max_section_len=500 \
+--batch_size=4 \
+--vocab_size=50000 \
+--use_do=True \
+--optimizer=adagrad \
+--do_prob=0.25 \
+--hier=True \
+--split_intro=False \
+--fixed_attn=True \
+--legacy_encoder=False \
+--coverage=False
