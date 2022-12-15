@@ -1,9 +1,9 @@
 
 1 - Transformar dataset para formato de treino do TF:
 
-    Treino: python ./scripts/json_to_bin.py ./data/dataset_v3/dataset-pt-treino.txt ./data/dataset_v3/treino_data_pt.bin --vocab_file ./data/dataset_v3/vocab.vocab
-    Validação: python ./scripts/json_to_bin.py ./data/dataset_v3/dataset-pt-val.txt ./data/dataset_v3/val_data_pt.bin 
-    Teste: python ./scripts/json_to_bin.py ./data/dataset_v3/dataset-pt-teste.txt ./data/dataset_v3/decode_data_pt.bin 
+    Treino: python ./scripts/json_to_bin.py ./data/dataset_v4/dataset-pt-treino-cohan.txt ./data/dataset_v4/treino_data_pt.bin --vocab_file ./data/dataset_v4/vocab.vocab
+    Validação: python ./scripts/json_to_bin.py ./data/dataset_v4/dataset-pt-val-cohan.txt ./data/dataset_v4/val_data_pt.bin 
+    Teste: python ./scripts/json_to_bin.py ./data/dataset_v4/dataset-pt-teste-cohan.txt ./data/dataset_v4/decode_data_pt.bin 
 
 2 - Executar os arquivos run_train.sh, run_eval.sh e run_decode.sh
 3 - run_decode.sh deve ter a flag single_pass ativada pra gerar indicadores de precisão com ROUGE
