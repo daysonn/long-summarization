@@ -1,22 +1,22 @@
-python run_summarization.py \
+python /home/dayson/long-summarization/run_summarization.py \
 --mode=train \
---data_path=./data/val_data_pt.bin \
---vocab_path=./data/vocab.vocab \
---log_root=logroot \
---exp_name=test-short \
---hidden_dim=24 \
---emb_dim=10 \
+--data_path=/scratch/dayson/long-summarization/data/dataset_v7/treino_data_pt.bin \
+--vocab_path=/scratch/dayson/long-summarization/data/dataset_v7/vocab.vocab \
+--log_root=/scratch/dayson/long-summarization/logroot \
+--exp_name=summ_cohan_v7 \
 --max_dec_steps=210 \
---max_enc_steps=250 \
---num_sections=3 \
---max_section_len=1000 \
+--max_enc_steps=2500 \
+--num_sections=5 \
+--max_section_len=600 \
+--min_abstract_len=100 \
+--max_abstract_len=400 \
 --batch_size=4 \
---vocab_size=5000 \
+--vocab_size=30000 \
 --use_do=True \
 --optimizer=adagrad \
 --do_prob=0.25 \
 --hier=True \
---split_intro=True \
+--split_intro=False \
 --fixed_attn=True \
 --legacy_encoder=False \
 --coverage=False
